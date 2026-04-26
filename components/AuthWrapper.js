@@ -7,42 +7,47 @@ export default function AuthWrapper({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const savedPassword = localStorage.getItem('app_password');
-    // We don't verify it with the server right away to save API calls.
-    // We just assume if it's there, they pass the gate.
-    // If the server rejects it later during summarization, we'll clear it.
-    if (savedPassword) {
-      setIsAuthenticated(true);
-    }
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (password.length > 0) {
-      localStorage.setItem('app_password', password);
-      setIsAuthenticated(true);
-      setError('');
-    } else {
+    if (!password) {
       setError('비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      if (res.ok) {
+        setIsAuthenticated(true);
+        // We temporarily store it in sessionStorage so we can pass it to /api/summarize 
+        // without keeping it forever. It clears when the tab closes.
+        sessionStorage.setItem('temp_auth_token', password);
+      } else {
+        const data = await res.json();
+        setError(data.error || '비밀번호가 틀렸습니다.');
+      }
+    } catch (err) {
+      setError('서버 연결에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Listen for 'auth_error' event from children (Summarizer) to clear password
-  useEffect(() => {
-    const handleAuthError = () => {
-      localStorage.removeItem('app_password');
-      setIsAuthenticated(false);
-      setError('비밀번호가 올바르지 않거나 변경되었습니다.');
-    };
-    window.addEventListener('auth_error', handleAuthError);
-    return () => window.removeEventListener('auth_error', handleAuthError);
-  }, []);
-
-  if (!isClient) return null; // Avoid hydration mismatch
+  if (!isClient) return null;
 
   if (isAuthenticated) {
     return <>{children}</>;
@@ -68,10 +73,11 @@ export default function AuthWrapper({ children }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={isLoading}
         />
-        <button type="submit" className="btn-primary">
-          <Unlock size={20} />
-          <span>잠금 해제</span>
+        <button type="submit" className="btn-primary" disabled={isLoading}>
+          {isLoading ? <div className="spinner" style={{ width: '20px', height: '20px' }}></div> : <Unlock size={20} />}
+          <span>{isLoading ? '확인 중...' : '잠금 해제'}</span>
         </button>
       </form>
       

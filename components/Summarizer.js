@@ -23,7 +23,7 @@ export default function Summarizer() {
     setIsLoading(true);
 
     try {
-      const appPassword = localStorage.getItem('app_password');
+      const appPassword = sessionStorage.getItem('temp_auth_token');
       
       const response = await fetch('/api/summarize', {
         method: 'POST',
