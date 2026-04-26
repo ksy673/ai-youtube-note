@@ -23,13 +23,20 @@ export default function Summarizer() {
     setIsLoading(true);
 
     try {
+      const appPassword = localStorage.getItem('app_password');
+      
       const response = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: url }),
+        body: JSON.stringify({ youtubeUrl: url, password: appPassword }),
       });
 
       const data = await response.json();
+
+      if (response.status === 401) {
+        window.dispatchEvent(new Event('auth_error'));
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || '요약을 가져오는 중 오류가 발생했습니다.');

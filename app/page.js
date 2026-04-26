@@ -5,6 +5,8 @@ export const metadata = {
   description: '유튜브 링크를 넣으면 AI가 핵심 내용을 요약해줍니다.',
 };
 
+import AuthWrapper from '@/components/AuthWrapper';
+
 export default function Home() {
   return (
     <>
@@ -17,7 +19,9 @@ export default function Home() {
           긴 유튜브 영상, 다 볼 시간 없으시죠? 링크만 넣으면 AI가 핵심만 뽑아드립니다.
         </p>
 
-        <Summarizer />
+        <AuthWrapper>
+          <Summarizer />
+        </AuthWrapper>
       </main>
     </>
   );

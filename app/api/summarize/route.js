@@ -12,7 +12,12 @@ export async function POST(req) {
     }
     
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const { youtubeUrl } = await req.json();
+    const { youtubeUrl, password } = await req.json();
+
+    // Check application password
+    if (process.env.APP_PASSWORD && password !== process.env.APP_PASSWORD) {
+      return NextResponse.json({ error: '인증 실패: 잘못된 비밀번호입니다.' }, { status: 401 });
+    }
 
     if (!youtubeUrl) {
       return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
