@@ -10,12 +10,31 @@ export default function Summarizer() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const handleSummarize = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    // Web Share Target API 로 유입된 링크 처리
+    const params = new URLSearchParams(window.location.search);
+    const sharedText = params.get('text') || '';
+    const sharedUrl = params.get('url') || '';
+    
+    // YouTube URL 패턴 찾기
+    const urlPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s]+)/;
+    const match = sharedText.match(urlPattern) || sharedUrl.match(urlPattern);
+    
+    if (match && match[1]) {
+      setUrl(match[1]);
+      // Remove query parameters to clean up URL without refreshing the page
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // 약간의 지연 후 자동으로 요약 시작
+      setTimeout(() => performSummarization(match[1]), 500);
+    }
+  }, []);
+
+  const performSummarization = async (targetUrl) => {
     setError('');
     setSummary('');
     
-    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+    if (!targetUrl.includes('youtube.com') && !targetUrl.includes('youtu.be')) {
       setError('올바른 유튜브 링크를 입력해주세요.');
       return;
     }
@@ -28,7 +47,7 @@ export default function Summarizer() {
       const response = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: url, password: appPassword }),
+        body: JSON.stringify({ youtubeUrl: targetUrl, password: appPassword }),
       });
 
       const data = await response.json();
@@ -48,6 +67,11 @@ export default function Summarizer() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSummarize = (e) => {
+    e.preventDefault();
+    performSummarization(url);
   };
 
   const copyToClipboard = async () => {

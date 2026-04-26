@@ -30,7 +30,7 @@ export async function POST(req) {
     } catch (err) {
       console.error('Transcript error:', err);
       return NextResponse.json(
-        { error: '자막을 가져올 수 없습니다. 자막이 없는 영상이거나, 제한된 영상일 수 있습니다.' },
+        { error: '해당 영상은 유튜브의 봇 방어 로직에 의해 자막 추출이 차단되었거나, 외부 자막이 허용되지 않은 영상입니다. (다른 영상으로 시도해주세요!)' },
         { status: 400 }
       );
     }
